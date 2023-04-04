@@ -12,18 +12,18 @@ def reshape_split(image: np.ndarray, kernel_size: tuple):
 
 
 
-npImage = np.asarray(Image.open("images/crab/0_r.jpg"))
-tiled_array = reshape_split(npImage,(128,96))
+npImage = np.asarray(Image.open("Test_Image.PNG"))
+tiled_array = reshape_split(npImage,(64,48))
 #print(tiled_array.shape)
 
 
 counter =0
-new_folder = "images/crab/test/"
+new_folder = "test/"
 
 for column in tiled_array:
     for imageCell in column:
         im = Image.fromarray(imageCell)
-        im.save(os.path.join(new_folder,f"{counter}.jpg"))        
+        im.save(os.path.join(new_folder,f"{counter}.png"))        
         counter += 1
 
 #counter = 0
