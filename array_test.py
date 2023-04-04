@@ -25,10 +25,3 @@ for column in tiled_array:
         im = Image.fromarray(imageCell)
         im.save(os.path.join(new_folder,f"{counter}.png"))        
         counter += 1
-
-#counter = 0
-#
-#for tile in tiled_array:
-#    cv2.imwrite(os.path.join(new_folder,f"{counter}.jpg"),tile)
-#    counter += 1
-

@@ -9,6 +9,13 @@ The aim of this project is to gain a better understanding of:
 -   Customizable speed control
 -   UI and UX
 
-Currently, there is no working code, and a UML design is in progress.
+The intention is to investigate two methods for finding out the type and location of the objects that will ultimately make the different noises:
+- Decompose the image into sub-images and perform classification on these
+    - This has the advantage of being simple, repetitive and predictable
+- Implement a YOLO algorithm or similar to find all items and their locations in a single look at the frame
+    - This has the potential to be massively faster, orders of magnitude better for the music, but also to go horribly wrong.
+
+These route alternatives are shown in the below flowchart:
+![Code Flow Diagram](Flow.png?raw=true "Image of a code flow diagram showing alternative solutions being attempted") 
 
 > Written with [StackEdit](https://stackedit.io/).
