@@ -1,4 +1,4 @@
-import cv2, os
+import cv2
 from PIL import Image
 from tqdm import tqdm
 import numpy as np
@@ -15,27 +15,36 @@ def reshape_split(image: np.ndarray, kernel_size: tuple):
 
 def validate_folder(folderPath):
     
-    Path(folderPath).mkdir(parents=True, exist_ok=True)
+    folderPath.mkdir(parents=True, exist_ok=True)
 
-for dirname, _, filenames in os.walk("images/"):
-        for filename in tqdm(filenames):
+filesList = [p for p in Path("images/").rglob("*.png")] # this lazily imports our generator as a list so we can use a progress bar.
+
+# If we have a lot of files, or don't want to use a hack to get a progress bar we can leave it as a generator:
+# filesList = Path("images/").rglob("*.png")
+# this should be faster, use less memory, and will still show how many iterations we're doing a second, but not know how long remains.
+# processing 1,000 files it's about 10% faster not to use the hack
+
+for thisFile in tqdm(filesList):
+        
             
-            thisFile = os.path.join(dirname, filename)
-            image = cv2.imread(thisFile)
+            
+            image = cv2.imread(str(thisFile))
             resized_frame = cv2.resize(image, (640, 480), interpolation = cv2.INTER_AREA)
-            cv2.imwrite(thisFile,resized_frame)
+            cv2.imwrite(str(thisFile),resized_frame)
 
-            npImage = np.asarray(Image.open(thisFile))
+            npImage = np.asarray(Image.open(str(thisFile)))
             tiled_array = reshape_split(npImage,(64,48))
             
-            new_folder = os.path.join(dirname, filename,"")
+            new_folder = thisFile.parent /  thisFile.stem / ""
+
+            
             validate_folder(new_folder)
             
             counter = 0
             for column in tiled_array:
                 for imageCell in column:
                     im = Image.fromarray(imageCell)
-                    im.save(os.path.join(new_folder,f"{counter}.jpg"))    
+                    im.save( new_folder / f"{counter}_s.png")    
                     counter += 1
 
 
