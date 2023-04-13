@@ -17,7 +17,7 @@ def validate_folder(folderPath):
     
     folderPath.mkdir(parents=True, exist_ok=True)
 
-filesList = [p for p in Path("images/").rglob("*.png")] # this lazily imports our generator as a list so we can use a progress bar.
+filesList = [p for p in Path("images/").rglob("*[!_]*.png")] # this lazily imports our generator as a list so we can use a progress bar.
 
 # If we have a lot of files, or don't want to use a hack to get a progress bar we can leave it as a generator:
 # filesList = Path("images/").rglob("*.png")
