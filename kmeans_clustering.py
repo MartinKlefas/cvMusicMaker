@@ -90,10 +90,11 @@ def cluster(rootFolder : pathlib.Path = pathlib.Path("/"), principal_components 
 imagePath = pathlib.Path("images/")
 
 for directory in [x for x in imagePath.iterdir() if x.is_dir()]:
+    print(f"testing {directory} for changes.")
+    if not pathlib.Path(directory / "groups.pickle").exists() or kmeans_preprocessor.needs_updating(directory):
+        print(f"processing {directory}")
 
-    print(f"processing {directory}")
+        groups = cluster(rootFolder = directory, principal_components  = 2, clusters = 2, imageSize=112) 
 
-    groups = cluster(rootFolder = directory, principal_components  = 2, clusters = 2, imageSize=112) 
-
-    with open(str(directory / "groups.pickle"), 'wb') as handle:
-        pickle.dump(groups, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(str(directory / "groups.pickle"), 'wb') as handle:
+            pickle.dump(groups, handle, protocol=pickle.HIGHEST_PROTOCOL)

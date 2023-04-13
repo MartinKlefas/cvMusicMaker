@@ -95,3 +95,11 @@ def getEmbedding(image, model):
 
 
     return my_embedding
+
+def needs_updating(folder : pathlib.Path):
+    files = folder.rglob('*s.png')
+    latest_file = max(files, key=lambda p: p.lstat().st_mtime)
+    newest_file_time = latest_file.lstat().st_mtime
+    pickle_file_time = pathlib.Path(folder / "groups.pickle").lstat().st_mtime
+
+    return pickle_file_time < newest_file_time
