@@ -17,7 +17,7 @@ def validate_folder(folderPath):
     
     folderPath.mkdir(parents=True, exist_ok=True)
 
-filesList = [p for p in Path("images/").rglob("*[!_]*.png")] # this lazily imports our generator as a list so we can use a progress bar.
+filesList = [p for p in Path("images/").rglob("*[!s].png")] # this lazily imports our generator as a list so we can use a progress bar.
 
 # If we have a lot of files, or don't want to use a hack to get a progress bar we can leave it as a generator:
 # filesList = Path("images/").rglob("*.png")
@@ -28,24 +28,27 @@ for thisFile in tqdm(filesList):
         
             
             
-            image = cv2.imread(str(thisFile))
-            resized_frame = cv2.resize(image, (640, 480), interpolation = cv2.INTER_AREA)
-            cv2.imwrite(str(thisFile),resized_frame)
+            try:
+                image = cv2.imread(str(thisFile))
+                resized_frame = cv2.resize(image, (640, 480), interpolation = cv2.INTER_AREA)
+                cv2.imwrite(str(thisFile),resized_frame)
 
-            npImage = np.asarray(Image.open(str(thisFile)))
-            tiled_array = reshape_split(npImage,(64,48))
-            
-            new_folder = thisFile.parent /  thisFile.stem / ""
+                npImage = np.asarray(Image.open(str(thisFile)))
+                tiled_array = reshape_split(npImage,(64,48))
+                
+                new_folder = thisFile.parent /  thisFile.stem / ""
 
-            
-            validate_folder(new_folder)
-            
-            counter = 0
-            for column in tiled_array:
-                for imageCell in column:
-                    im = Image.fromarray(imageCell)
-                    im.save( new_folder / f"{counter}_s.png")    
-                    counter += 1
-
+                
+                validate_folder(new_folder)
+                
+                counter = 0
+                for column in tiled_array:
+                    for imageCell in column:
+                        im = Image.fromarray(imageCell)
+                        im.save( new_folder / f"{counter}_s.png")    
+                        counter += 1    
+            except Exception as ex:
+                print(thisFile)
+                print(ex)
 
 
