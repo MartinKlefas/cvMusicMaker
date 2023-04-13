@@ -14,7 +14,7 @@ from sklearn.cluster import KMeans
 
 import pyarrow.feather as feather
 
-import sys,pathlib, random,shutil, gc
+import sys,pathlib, random,shutil, gc, pickle
 
 def cluster(rootFolder : pathlib.Path = pathlib.Path("/"), principal_components : int = 2, clusters : int = 2, imageSize : int = 224):
 
@@ -32,23 +32,24 @@ def cluster(rootFolder : pathlib.Path = pathlib.Path("/"), principal_components 
 
     gc.collect()
 
+    batch_size = 4000
 
     print("getting features")
-    if x.shape[0] < 10000:
+    if x.shape[0] <= batch_size:
     # if there's not a lot of images, this will work.
         features = model_ft.predict(x, use_multiprocessing=True, verbose=0)
         features = features.reshape(-1,4096)
     else:
     #since there's like 160,000 of them here, this splits it out:
 
-        batch_size = 16000
+        
         num_batches = int(np.ceil(len(x) / batch_size))
 
         features = []
         for i in range(num_batches):
             start = i * batch_size
             end = (i + 1) * batch_size
-            
+            print(f"Encoding batch {i+1} of {num_batches}.")
             batch_x = x[start:end]
             batch_features = model_ft.predict(batch_x, use_multiprocessing=True, verbose=0)
         
@@ -90,8 +91,9 @@ imagePath = pathlib.Path("images/")
 
 for directory in [x for x in imagePath.iterdir() if x.is_dir()]:
 
-    print(f"processing {directory}.")
+    print(f"processing {directory}")
 
     groups = cluster(rootFolder = directory, principal_components  = 2, clusters = 2, imageSize=112) 
 
-    feather.write_feather(groups, directory / "groups.feather")
+    with open(str(directory / "groups.pickle"), 'wb') as handle:
+        pickle.dump(groups, handle, protocol=pickle.HIGHEST_PROTOCOL)
