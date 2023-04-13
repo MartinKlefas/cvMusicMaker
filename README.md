@@ -18,4 +18,8 @@ The intention is to investigate two methods for finding out the type and locatio
 These route alternatives are shown in the below flowchart:
 ![Code Flow Diagram](Flow.png?raw=true "Image of a code flow diagram showing alternative solutions being attempted") 
 
+# Sub Images Pathway
+
+[array_test.py](array_test.py) implements the decomposition algorithm on a test image. In doing it provides both a proof of concept, and a handy reference guide for where each part of the image ends up in the resulting array / for loops.
+
 > Written with [StackEdit](https://stackedit.io/).
