@@ -99,7 +99,7 @@ def getEmbedding(image, model):
 
     return my_embedding
 
-def needs_updating(folder : pathlib.Path):
+def groups_need_updating(folder : pathlib.Path):
     files = folder.rglob('*s.png')
     latest_file = max(files, key=lambda p: p.lstat().st_mtime)
     newest_file_time = latest_file.lstat().st_mtime

@@ -93,7 +93,7 @@ imagePath = pathlib.Path("images/")
 
 for directory in [x for x in imagePath.iterdir() if x.is_dir()]:
     print(f"testing {directory} for changes.")
-    if not pathlib.Path(directory / "groups.pickle").exists() or kmeans_preprocessor.needs_updating(directory):
+    if not pathlib.Path(directory / "groups.pickle").exists() or kmeans_preprocessor.groups_need_updating(directory):
         print(f"processing {directory}")
 
         groups = cluster(rootFolder = directory, principal_components  = 2, clusters = 2)#, imageSize=112) 
