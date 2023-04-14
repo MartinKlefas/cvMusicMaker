@@ -54,6 +54,9 @@ def processFolder(objPath : pathlib.Path = None, strPath: str ="", size: int = d
     # we now have a list of definite size, instead of a generator
     print(f"Found {len(filesList)} files.")
     
+    print("trimming for test")
+    filesList = filesList[:4000]
+
     with ThreadPoolExecutor() as executor:
         images = list(tqdm(executor.map(cvload_image, filesList, [size]*len(filesList)),
                        total=len(filesList),

@@ -12,50 +12,54 @@ from sklearn.decomposition import PCA
 
 from sklearn.cluster import KMeans
 
-import pyarrow.feather as feather
+from concurrent.futures import ThreadPoolExecutor
 
-import sys,pathlib, random,shutil, gc, pickle
+import pathlib, gc, pickle
 
 def cluster(rootFolder : pathlib.Path = pathlib.Path("/"), principal_components : int = 2, clusters : int = 2, imageSize : int = 224):
 
     input_shape = (imageSize, imageSize, 3)
     input_layer = Input(shape=input_shape)
 
-    model_ft = VGG16(weights='imagenet', include_top=False,input_tensor=input_layer)
+    model_ft = VGG16()
     model_ft = Model(inputs= model_ft.inputs,outputs = model_ft.layers[-2].output)
 
-    images, filenames = kmeans_preprocessor.processFolder(objPath = rootFolder,size=imageSize)
+    files = rootFolder.rglob('*s.png')
 
-    print("Preprocessing in Keras")
-    x = preprocess_input(images)
-    del images
+    # we again need to use our ugly hack to do a progress bar, this time though we need a list of strings for cv2 to be able to open them
+    fileNames = [str(p) for p in files]
 
-    gc.collect()
+    batch_size = 2000
+    num_batches = int(np.ceil(len(fileNames) / batch_size))
 
-    batch_size = 4000
-
-    print("getting features")
-    if x.shape[0] <= batch_size:
-    # if there's not a lot of images, this will work.
-        features = model_ft.predict(x, use_multiprocessing=True, verbose=0)
-        features = features.reshape(-1,4096)
-    else:
-    #since there's like 160,000 of them here, this splits it out:
-
-        
-        num_batches = int(np.ceil(len(x) / batch_size))
-
-        features = []
-        for i in range(num_batches):
+    features = []
+    for i in tqdm(range(num_batches),desc="Processing image batches"):
             start = i * batch_size
             end = (i + 1) * batch_size
-            print(f"Encoding batch {i+1} of {num_batches}.")
-            batch_x = x[start:end]
-            batch_features = model_ft.predict(batch_x, use_multiprocessing=True, verbose=0)
-        
+
+            batch_fileNames = fileNames[start:end]
+
+            with ThreadPoolExecutor() as executor:
+                images = list(executor.map(kmeans_preprocessor.cvload_image, batch_fileNames, [imageSize]*len(batch_fileNames)))
+
+            #print("Concatenating")
+            images = np.concatenate(images, axis=0)
+            
+            #print("Pre-procssing")
+            x = preprocess_input(images)
+            del images
+            gc.collect()
+
+            #print("extracting features")
+            batch_features = model_ft.predict(x, use_multiprocessing=True, verbose=0)
+            
+            
             features.append(batch_features.reshape(-1, 4096))
 
-        features = np.concatenate(features, axis=0)
+    
+    
+    print("concatenating features")
+    features = np.concatenate(features, axis=0)
     
 
     del x
@@ -76,7 +80,7 @@ def cluster(rootFolder : pathlib.Path = pathlib.Path("/"), principal_components 
     
     print("preparing groups")
     groups = {}
-    for file, cluster in zip(filenames,kmeans.labels_):
+    for file, cluster in zip(fileNames,kmeans.labels_):
         if cluster not in groups.keys():
             groups[cluster] = []
             groups[cluster].append(file)
@@ -85,8 +89,6 @@ def cluster(rootFolder : pathlib.Path = pathlib.Path("/"), principal_components 
 
     return groups
 
-
-
 imagePath = pathlib.Path("images/")
 
 for directory in [x for x in imagePath.iterdir() if x.is_dir()]:
@@ -94,7 +96,7 @@ for directory in [x for x in imagePath.iterdir() if x.is_dir()]:
     if not pathlib.Path(directory / "groups.pickle").exists() or kmeans_preprocessor.needs_updating(directory):
         print(f"processing {directory}")
 
-        groups = cluster(rootFolder = directory, principal_components  = 2, clusters = 2, imageSize=112) 
+        groups = cluster(rootFolder = directory, principal_components  = 2, clusters = 2)#, imageSize=112) 
 
         with open(str(directory / "groups.pickle"), 'wb') as handle:
             pickle.dump(groups, handle, protocol=pickle.HIGHEST_PROTOCOL)
