@@ -113,4 +113,10 @@ def feat_extract(rootFolder : pathlib.Path = pathlib.Path("/")):
 
     with open(str(rootFolder/ "features_all.pickle"), 'wb') as handle:
                 pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
+
+
+imagePath = pathlib.Path("images/")
+
+for directory in [x for x in imagePath.iterdir() if x.is_dir()]:
+    print(f"testing {directory} for changes.")
+    feat_extract(directory)
