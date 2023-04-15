@@ -9,7 +9,7 @@ from keras.applications.vgg16 import preprocess_input
 
 from concurrent.futures import ThreadPoolExecutor
 
-import pathlib, gc, pickle, sys
+import pathlib, gc, pickle, sys, uuid
 
 def feat_current(folder : pathlib.Path):
     files = folder.rglob('*s.png')
@@ -35,6 +35,9 @@ def batches_current(folder : pathlib.Path):
 
 def feat_extract(rootFolder : pathlib.Path = pathlib.Path("/")):
 
+    new_pickles_folder = pathlib.Path(rootFolder / "pickles" / str(uuid.uuid4()) / "")
+    new_pickles_folder.mkdir(parents=True, exist_ok=True)
+
     model_ft = VGG16()
     model_ft = Model(inputs= model_ft.inputs,outputs = model_ft.layers[-2].output)
 
@@ -56,6 +59,7 @@ def feat_extract(rootFolder : pathlib.Path = pathlib.Path("/")):
     features = []
 
     if pathlib.Path(rootFolder / "features_batch_1.pickle").exists() and batches_current(rootFolder):
+        print("reading old progress")
         feat_pickles = rootFolder.rglob('features*.pickle')
 
         
@@ -66,19 +70,22 @@ def feat_extract(rootFolder : pathlib.Path = pathlib.Path("/")):
             features.append(batch_features.reshape(-1, 4096))
 
         filename_pickles = rootFolder.rglob('filenames*.pickle')
-
+        
         
         for thisPickle in filename_pickles:
             with open(str(thisPickle), 'rb') as handle:
                     batch_fileNames = pickle.load(handle)
             doneFilenames = doneFilenames + batch_fileNames
 
+        #Change list to set, this is because checking membership in a set is much faster (O(1) complexity) than in a list (O(n) complexity)
         doneFilenames = set(doneFilenames)
-        #This is because checking membership in a set is much faster (O(1) complexity) than in a list (O(n) complexity)
+        print(f"loaded progress for {len(doneFilenames)} files")
+        
     
 
 
-    for i in tqdm(range(num_batches),desc="Processing image batches"):
+    for i in range(num_batches): #tqdm(range(num_batches),desc="Processing image batches"):
+            print(f"Batch {i+1} of {num_batches+1}")
             start = i * batch_size
             end = (i + 1) * batch_size
 
@@ -86,27 +93,28 @@ def feat_extract(rootFolder : pathlib.Path = pathlib.Path("/")):
             if len(doneFilenames) > 0:
                 batch_fileNames = [filename for filename in batch_fileNames if filename not in doneFilenames]
 
-            with ThreadPoolExecutor() as executor:
-                images = list(executor.map(kmeans_preprocessor.cvload_image, batch_fileNames, [224]*len(batch_fileNames)))
+            if len(batch_fileNames) > 0:
+                with ThreadPoolExecutor() as executor:
+                    images = list(executor.map(kmeans_preprocessor.cvload_image, batch_fileNames, [224]*len(batch_fileNames)))
 
-            #print("Concatenating")
-            images = np.concatenate(images, axis=0)
-            
-            #print("Pre-procssing")
-            x = preprocess_input(images)
-            del images
-            gc.collect()
+                #print("Concatenating")
+                images = np.concatenate(images, axis=0)
+                
+                #print("Pre-procssing")
+                x = preprocess_input(images)
+                del images
+                gc.collect()
 
-            #print("extracting features")
-            batch_features = model_ft.predict(x, use_multiprocessing=True, verbose=0)
-            
-            with open(str(rootFolder/ f"features_batch_{i}.pickle"), 'wb') as handle:
-                pickle.dump(batch_features, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                #print("extracting features")
+                batch_features = model_ft.predict(x, use_multiprocessing=True, verbose=1)
+                
+                with open(str(new_pickles_folder/ f"features_batch_{i}.pickle"), 'wb') as handle:
+                    pickle.dump(batch_features, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-            with open(str(rootFolder/ f"filenames_batch_{i}.pickle"), 'wb') as handle:
-                pickle.dump(batch_fileNames, handle, protocol=pickle.HIGHEST_PROTOCOL)
-            
-            features.append(batch_features.reshape(-1, 4096))   
+                with open(str(new_pickles_folder/ f"filenames_batch_{i}.pickle"), 'wb') as handle:
+                    pickle.dump(batch_fileNames, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                
+                features.append(batch_features.reshape(-1, 4096))   
 
     print("concatenating features")
     features = np.concatenate(features, axis=0)

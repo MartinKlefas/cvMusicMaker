@@ -29,9 +29,9 @@ for thisFile in tqdm(filesList):
             
             
             try:
-                image = cv2.imread(str(thisFile))
-                resized_frame = cv2.resize(image, (640, 480), interpolation = cv2.INTER_AREA)
-                cv2.imwrite(str(thisFile),resized_frame)
+                #image = cv2.imread(str(thisFile))
+                #resized_frame = cv2.resize(image, (640, 480), interpolation = cv2.INTER_AREA)
+                #cv2.imwrite(str(thisFile),resized_frame)
 
                 npImage = np.asarray(Image.open(str(thisFile)))
                 tiled_array = reshape_split(npImage,(64,48))
